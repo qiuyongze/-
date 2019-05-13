@@ -10,7 +10,7 @@ Fabricnode3: 10.10.11.29 1q2w3e4r
 …
 提前准备
 所有节点要禁用swap:
-swapoff –a   //这是一条命令，用于关闭交换分区
+swapoff -a   //这是一条命令，用于关闭交换分区
 配置nfs服务器fabricnfs:10.10.11.31，所以节点挂载nfs服务器的/opt/share
    mount -t nfs 10.10.11.31:/opt/share /opt/share
 
@@ -34,4 +34,24 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-关闭这个K8S，运行命令：kubeadm reset
+关闭这个K8S，运行命令，每一台机器都要执行这个命令：
+kubeadm reset   ：当出现选择时，输入y
+systemctl stop kubelet
+systemctl stop docker
+rm -rf /var/lib/cni/
+rm -rf /var/lib/kubelet/*
+rm -rf /etc/cni/
+ifconfig cni0 down
+ifconfig flannel.1 down
+ifconfig docker0 down
+ip link delete cni0
+ip link delete flannel.1
+systemctl start kubelet
+systemctl start docker
+
+
+下面的学习的知识都是在：10.10.11.11服务器上/qiu_fabric/preparetest.sh之中找到的学习到的；
+在这个K8S上搭建fabric，直接在/qiu_fabric/setupCluster 目录中运行命令：python3 fabricOnK8s.py up -o 3 -p 2 -c 1，启动fabric网络。
+  关闭这个fabric就是执行命令：python3 fabricOnK8s.py down -o 3 -p 2 -c 1。  以上至此，fabric搭建完成。
+随后，要进行fabric的网络的配置，执行命令：python3 configNet.py -p 2 -c 1 -d false
+上面的这个命令我已经执行完成了。
