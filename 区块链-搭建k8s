@@ -1,0 +1,37 @@
+下载kubeadm，版本1.13.1
+下载docker,版本18.06.3
+下载fabric镜像版本1.2.0
+
+#1搭建k8s集群，将各个物理机连接
+Master: 10.10.11.11 1q2w3e4r
+Fabricnode1: 10.10.10.21 123456789
+Fabricnode2: 10.10.11.28 1q2w3e4r
+Fabricnode3: 10.10.11.29 1q2w3e4r
+…
+提前准备
+所有节点要禁用swap:
+swapoff –a   //这是一条命令，用于关闭交换分区
+配置nfs服务器fabricnfs:10.10.11.31，所以节点挂载nfs服务器的/opt/share
+   mount -t nfs 10.10.11.31:/opt/share /opt/share
+
+
+Master节点：就是10.10.11.11节点
+初始化：kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=10.10.11.11 --kubernetes-version v1.13.1  
+       随后在这个窗口之下，会出现一条命令，这个命令分别在另外三个窗口上进行执行，加入到这个master节点。
+       例如执行：kubeadm join 10.10.11.11:6443 --token i01hov.ueajibrgwf2iqwxu --discovery-token-ca-cert-hash sha256:281f630f3ed84789ce6bc31f02f4c2f1ef07727408241f6e037211c342a92cbc
+设置环境变量：  export KUBECONFIG=/etc/kubernetes/admin.conf
+配置flannel网络：  sysctl net.bridge.bridge-nf-call-iptables=1
+创建flannel网络的配置目录：  mkdir -p /etc/cni/net.d
+安装flannel网络插件：
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+查看所有的pod：  kubectl get pods --all-namespaces  //这个步骤需要等一等，可能有的没有起来，等所有的都running才行
+
+查看所有的node:
+kubectl get nodes
+
+以非root用户和master交互：
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+关闭这个K8S，运行命令：kubeadm reset
